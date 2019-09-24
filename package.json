@@ -11,13 +11,22 @@
   },
   "private": false,
   "devDependencies": {
+    "@types/ccapture.js": "^1.1.0",
     "@types/d3": "^5.7.2",
+    "@types/p5": "^0.9.0",
     "@types/webpack": "^4.39.1",
+    "@typescript-eslint/eslint-plugin": "^2.3.0",
+    "@typescript-eslint/parser": "^2.3.0",
+    "eslint": "^6.4.0",
+    "eslint-config-prettier": "^6.3.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "prettier": "^1.18.2",
     "ts-loader": "^6.0.4",
     "typescript": "^3.6.2"
   },
   "dependencies": {
     "d3": "^5.12.0",
+    "p5": "^0.9.0",
     "parcel": "^1.12.3"
   }
 }
