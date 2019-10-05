@@ -4,7 +4,7 @@ import p5 from 'p5';
 import regl from 'regl';
 import fr from './test.frag';
 import vr from './test.vert';
-import { range, interpolateHclLong, rgb } from 'd3';
+import { range, interpolateHclLong, rgb, interpolate, hcl } from 'd3';
 
 const TAU = Math.PI * 2;
 new p5.Image();
@@ -36,6 +36,17 @@ export const sketch = (gfx: p5) => {
       cv.getContext('webgl', { preserveDrawingBuffer: true })!
     );
     const uniforms: any = {};
+    const hcl1 = hcl('#00f494');
+    const hcl2 = hcl('#2f0a4a');
+    const hLerp = interpolate(hcl1.h, hcl2.h);
+    const cLerp = interpolate(hcl1.c, hcl2.c);
+    const lLerp = interpolate(hcl1.l, hcl2.l);
+    const hclLerp = t => {
+      const h = hLerp(t);
+      const c = cLerp(t);
+      const l = lLerp(t);
+      return hcl(h, l, c);
+    };
     let cinterpolator = interpolateHclLong(rgb('#00f494'), rgb('#2f0a4a'));
     range(128).forEach(i => {
       const t = i / 127;
