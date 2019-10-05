@@ -1,6 +1,7 @@
 precision mediump float;
 varying vec2 uv;
 uniform vec3 col_map[128];
+uniform sampler2D colour;
 vec3 hue2rgb(float hue){
   hue=fract(hue);//only use fractional part of hue, making it loop
   float r=abs(hue*6.-3.)-1.;//red
