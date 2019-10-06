@@ -1,4 +1,4 @@
-/// <reference path="./global.d.ts" />
+// / <reference path="./global.d.ts" />
 
 import p5 from 'p5';
 import regl from 'regl';
@@ -41,7 +41,7 @@ export const sketch = (gfx: p5) => {
     const hLerp = interpolate(hcl1.h, hcl2.h);
     const cLerp = interpolate(hcl1.c, hcl2.c);
     const lLerp = interpolate(hcl1.l, hcl2.l);
-    const hclLerp = t => {
+    const hclLerp = (t: number) => {
       const h = hLerp(t);
       const c = cLerp(t);
       const l = lLerp(t);
