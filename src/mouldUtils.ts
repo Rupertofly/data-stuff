@@ -143,9 +143,14 @@ export function move(
   pcl: MouldParticle,
   width: number,
   height: number,
-  distance: number
+  distance: number,
+  pcls: MouldParticle[]
 ) {
-  return getNewPosition(pcl, width, height, distance);
+  let nn = getNewPosition(pcl, width, height, distance);
+  if (pcls.every(t => t.x !== nn.x || t.y !== nn.y)) {
+    return nn;
+  }
+  return new MouldParticle(pcl.x, pcl.y, (pcl.facing + 1) % degOfMv);
 }
 export function turn(pcl: MouldParticle, direction: Dir) {
   return new MouldParticle(pcl.x, pcl.y, direction);

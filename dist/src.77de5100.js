@@ -28640,8 +28640,16 @@ function sense(pcl, source, width, height, length) {
   };
 }
 
-function move(pcl, width, height, distance) {
-  return getNewPosition(pcl, width, height, distance);
+function move(pcl, width, height, distance, pcls) {
+  var nn = getNewPosition(pcl, width, height, distance);
+
+  if (pcls.every(function (t) {
+    return t.x !== nn.x || t.y !== nn.y;
+  })) {
+    return nn;
+  }
+
+  return new MouldParticle(pcl.x, pcl.y, (pcl.facing + 1) % degOfMv);
 }
 
 function turn(pcl, direction) {
@@ -28662,7 +28670,7 @@ var drawingCanvas = (0, _d.select)('body').append('canvas').style('width', width
 var capturer = new CCapture({
   format: 'webm',
   name: 'mould' + new Date().toISOString(),
-  framerate: 60,
+  framerate: 30,
   timeLimit: 30,
   verbose: true,
   quality: 100
@@ -28720,6 +28728,9 @@ try {
 }
 
 gfx.putImageData(startingData, 0, 0);
+var conGen = (0, _d.contours)();
+conGen.thresholds(5);
+conGen.size([width, height]);
 var startingParticles = (0, _d.range)(0.08 * width * height).map(function (i) {
   var _ref = [flr(width * rand()), flr(height * rand())],
       x = _ref[0],
@@ -28746,14 +28757,14 @@ capturer.capture(drawingCanvas.node());
 
 var renderLoop = function renderLoop(t, data, pcls) {
   var senseArr = pcls.map(function (p) {
-    return (0, _mouldUtils.sense)(p, data.data, data.width, data.height, 16);
+    return (0, _mouldUtils.sense)(p, data.data, data.width, data.height, 24);
   });
   var newPos = senseArr.map(function (s) {
     if (s.move) {
-      var movedPcl = (0, _mouldUtils.move)(s.particle, data.width, data.height, 2);
+      var movedPcl = (0, _mouldUtils.move)(s.particle, data.width, data.height, 2, pcls);
       var nX = movedPcl.x,
           nY = movedPcl.y;
-      data.data.set([255, 255, 255, 255], (0, _mouldUtils.arrayStart)(movedPcl.x, movedPcl.y, data.width));
+      data.data.set([240, 240, 240, 255], (0, _mouldUtils.arrayStart)(movedPcl.x, movedPcl.y, data.width));
       return movedPcl;
     } else {
       return new _mouldUtils.MouldParticle(s.particle.x, s.particle.y, s.newDirection);
@@ -28779,7 +28790,7 @@ var renderLoop = function renderLoop(t, data, pcls) {
             for (var dy = -1; dy <= 1; dy++) {
               var nx = (width + x + dx) % width;
               var ny = (height + y + dy) % height;
-              avg += data.data[(0, _mouldUtils.arrayStart)(nx, ny, width)] * 0.105;
+              avg += data.data[(0, _mouldUtils.arrayStart)(nx, ny, width)] * 0.108;
             }
           }
 
@@ -28816,17 +28827,24 @@ var renderLoop = function renderLoop(t, data, pcls) {
     }
   }
 
-  gfx.putImageData(data, 0, 0);
-  var newData = gfx.getImageData(0, 0, width, height);
   var itch = (0, _d.interpolateCubehelixLong)('#2f0a4a', '#00f494');
+  var points = [];
 
-  for (var i = 0; i < newData.data.length; i = i + 4) {
-    var v = newData.data[i] / 255;
-    var col = (0, _d.rgb)(hclLerp((0, _d.easeCircleInOut)(v)));
-    newData.data.set([col.r, col.g, col.b, 255], i);
+  for (var i = 0; i < data.data.length; i = i + 4) {
+    points.push(data.data[i]);
   }
 
-  gfx.putImageData(newData, 0, 0);
+  conGen(points).map(function (cp, i, l) {
+    var fStyle = itch(cp.value / 255);
+    gfx.fillStyle = fStyle;
+    var sStyle = (0, _d.lab)(fStyle).brighter(0.5);
+    gfx.strokeStyle = sStyle.toString();
+    gfx.beginPath();
+    (0, _d.geoPath)(null, gfx)(cp);
+    gfx.fill();
+    gfx.stroke();
+  });
+  gfx.fill();
   capturer.capture(drawingCanvas.node());
   requestAnimationFrame(function () {
     return renderLoop(0, data, newPos);

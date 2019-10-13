@@ -6,6 +6,9 @@ import {
   hcl,
   interpolate,
   easeCircleInOut,
+  geoPath,
+  contours,
+  lab,
 } from 'd3';
 import { arrayStart, Dir, MouldParticle, sense, move } from './mouldUtils';
 
@@ -26,7 +29,7 @@ const drawingCanvas = select('body')
 const capturer = new CCapture({
   format: 'webm',
   name: 'mould' + new Date().toISOString(),
-  framerate: 60,
+  framerate: 30,
   timeLimit: 30,
   verbose: true,
   // motionBlurFrames: 1,
@@ -44,7 +47,9 @@ for (let x of range(width))
     startingData.data.set([value, value, value, 255], pos);
   }
 gfx.putImageData(startingData, 0, 0);
-
+const conGen = contours();
+conGen.thresholds(5);
+conGen.size([width, height]);
 const startingParticles = range(0.08 * width * height).map(i => {
   const [x, y] = [flr(width * rand()), flr(height * rand())];
   const d = flr(rand() * 16) as Dir;
@@ -66,14 +71,14 @@ capturer.start();
 capturer.capture(drawingCanvas.node()!);
 const renderLoop = (t: number, data: ImageData, pcls: MouldParticle[]) => {
   const senseArr = pcls.map(p => {
-    return sense(p, data.data, data.width, data.height, 16);
+    return sense(p, data.data, data.width, data.height, 24);
   });
   const newPos = senseArr.map(s => {
     if (s.move) {
-      const movedPcl = move(s.particle, data.width, data.height, 2);
+      const movedPcl = move(s.particle, data.width, data.height, 2, pcls);
       const { x: nX, y: nY } = movedPcl;
       data.data.set(
-        [255, 255, 255, 255],
+        [240, 240, 240, 255],
         arrayStart(movedPcl.x, movedPcl.y, data.width)
       );
       return movedPcl;
@@ -88,20 +93,28 @@ const renderLoop = (t: number, data: ImageData, pcls: MouldParticle[]) => {
         for (let dy = -1; dy <= 1; dy++) {
           let nx = (width + x + dx) % width;
           let ny = (height + y + dy) % height;
-          avg += data.data[arrayStart(nx, ny, width)] * 0.105;
+          avg += data.data[arrayStart(nx, ny, width)] * 0.108;
         }
       avg = flr(avg);
       data.data.set([avg, avg, avg, 255], arrayStart(x, y, width));
     }
-  gfx.putImageData(data, 0, 0);
-  let newData = gfx.getImageData(0, 0, width, height);
   const itch = interpolateCubehelixLong('#2f0a4a', '#00f494');
-  for (let i = 0; i < newData.data.length; i = i + 4) {
-    const v = newData.data[i] / 255;
-    const col = rgb(hclLerp(easeCircleInOut(v)));
-    newData.data.set([col.r, col.g, col.b, 255], i);
+  const points = [];
+  for (let i = 0; i < data.data.length; i = i + 4) {
+    points.push(data.data[i]);
   }
-  gfx.putImageData(newData, 0, 0);
+  conGen(points).map((cp, i, l) => {
+    const fStyle = itch(cp.value / 255);
+    gfx.fillStyle = fStyle;
+    const sStyle = lab(fStyle).brighter(0.5);
+    gfx.strokeStyle = sStyle.toString();
+    gfx.beginPath();
+    geoPath(null, gfx)(cp);
+    gfx.fill();
+    gfx.stroke();
+  });
+  gfx.fill();
+  // gfx.putImageData(newData, 0, 0);
   capturer.capture(drawingCanvas.node()!);
   requestAnimationFrame(() => renderLoop(0, data, newPos));
 };
